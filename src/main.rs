@@ -1,19 +1,17 @@
-//! Blinks the LED on a Pico board
-//!
-//! This will blink an LED attached to GP25, which is the pin the Pico uses for the on-board LED.
 #![no_std]
 #![no_main]
 
 use bsp::entry;
 use defmt::*;
 use defmt_rtt as _;
-use embedded_hal::digital::OutputPin;
+use embedded_graphics::{pixelcolor::Rgb565, prelude::RgbColor, prelude::*};
+use embedded_hal::{digital::OutputPin, spi::MODE_0};
 use panic_probe as _;
 
-// Provide an alias for our BSP so we can switch targets quickly.
-// Uncomment the BSP you included in Cargo.toml, the rest of the code does not need to change.
-use rp_pico as bsp;
-// use sparkfun_pro_micro_rp2040 as bsp;
+use rp_pico::{
+    self as bsp,
+    hal::{fugit::RateExtU32, gpio::FunctionSpi, Spi},
+};
 
 use bsp::hal::{
     clocks::{init_clocks_and_plls, Clock},
@@ -21,6 +19,15 @@ use bsp::hal::{
     sio::Sio,
     watchdog::Watchdog,
 };
+
+use embedded_hal_bus::spi::ExclusiveDevice;
+use mipidsi::{interface::SpiInterface, models::ST7789, options::ColorInversion, Builder};
+
+// Display
+const W: i32 = 135;
+const H: i32 = 240;
+const X_OFFSET: u16 = 52;
+const Y_OFFSET: u16 = 40;
 
 #[entry]
 fn main() -> ! {
@@ -44,7 +51,11 @@ fn main() -> ! {
     .ok()
     .unwrap();
 
-    let mut delay = cortex_m::delay::Delay::new(core.SYST, clocks.system_clock.freq().to_Hz());
+    // Define the delay struct, needed for the display driver
+    let mut delay = DelayCompat(cortex_m::delay::Delay::new(
+        core.SYST,
+        clocks.system_clock.freq().to_Hz(),
+    ));
 
     let pins = bsp::Pins::new(
         pac.IO_BANK0,
@@ -53,25 +64,70 @@ fn main() -> ! {
         &mut pac.RESETS,
     );
 
-    // This is the correct pin on the Raspberry Pico board. On other boards, even if they have an
-    // on-board LED, it might need to be changed.
-    //
-    // Notably, on the Pico W, the LED is not connected to any of the RP2040 GPIOs but to the cyw43 module instead.
-    // One way to do that is by using [embassy](https://github.com/embassy-rs/embassy/blob/main/examples/rp/src/bin/wifi_blinky.rs)
-    //
-    // If you have a Pico W and want to toggle a LED with a simple GPIO output pin, you can connect an external
-    // LED to one of the GPIO pins, and reference that pin here. Don't forget adding an appropriate resistor
-    // in series with the LED.
-    let mut led_pin = pins.led.into_push_pull_output();
+    /* Define the DC digital output pin as the variable `dc` */
+    let dc = pins.gpio7.into_push_pull_output();
+
+    /* Define the SPI interface as the variable `spi` */
+    let sclk = pins.gpio2.into_function::<FunctionSpi>();
+    let mosi = pins.gpio3.into_function::<FunctionSpi>();
+
+    /* Define the CS digital output pin as the variable `cs` */
+    let cs = pins.gpio5.into_push_pull_output();
+
+    /* Define the BL digital output pin as the variable `bl` */
+    let mut bl = pins.gpio6.into_push_pull_output();
+
+    let spi_device = pac.SPI0;
+    let spi_pin_layout = (mosi, sclk);
+
+    let spi = Spi::<_, _, _, 8>::new(spi_device, spi_pin_layout).init(
+        &mut pac.RESETS,
+        clocks.peripheral_clock.freq(),
+        16_000_000u32.Hz(),
+        MODE_0,
+    );
+
+    let spi_device = ExclusiveDevice::new_no_delay(spi, cs).unwrap();
+
+    // Create a buffer
+    let mut buffer = [0_u8; 512];
+
+    // Create a DisplayInterface from SPI and DC pin, with no manual CS control
+    let di = SpiInterface::new(spi_device, dc, &mut buffer);
+
+    // Define the display from the display interface and initialize it
+    let mut display = Builder::new(ST7789, di)
+        .display_size(W as u16, H as u16)
+        .display_offset(X_OFFSET, Y_OFFSET)
+        .invert_colors(ColorInversion::Inverted)
+        .init(&mut delay)
+        .unwrap();
+
+    // Make the display all black
+    display.clear(Rgb565::BLACK).unwrap();
+
+    // Turn on backlight
+    bl.set_high().unwrap();
 
     loop {
-        info!("on!");
-        led_pin.set_high().unwrap();
-        delay.delay_ms(500);
-        info!("off!");
-        led_pin.set_low().unwrap();
-        delay.delay_ms(500);
+        // Do nothing
     }
 }
 
-// End of file
+/// Wrapper around `Delay` to implement the embedded-hal 1.0 delay.
+///
+/// This can be removed when a new version of the `cortex_m` crate is released.
+struct DelayCompat(cortex_m::delay::Delay);
+
+impl embedded_hal::delay::DelayNs for DelayCompat {
+    fn delay_ns(&mut self, mut ns: u32) {
+        while ns > 1000 {
+            self.0.delay_us(1);
+            ns = ns.saturating_sub(1000);
+        }
+    }
+
+    fn delay_us(&mut self, us: u32) {
+        self.0.delay_us(us);
+    }
+}
