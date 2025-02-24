@@ -110,7 +110,7 @@ fn main() -> ! {
     bl.set_high().unwrap();
 
     loop {
-        // Do nothing
+        cortex_m::asm::wfi(); // "Wait For Interrupt"
     }
 }
 
