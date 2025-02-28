@@ -4,7 +4,12 @@
 use bsp::entry;
 use defmt::*;
 use defmt_rtt as _;
-use embedded_graphics::{pixelcolor::Rgb565, prelude::RgbColor, prelude::*};
+use embedded_graphics::{
+    mono_font::{ascii::FONT_10X20, MonoTextStyleBuilder},
+    pixelcolor::Rgb565,
+    prelude::{RgbColor, *},
+    text::Text,
+};
 use embedded_hal::{digital::OutputPin, spi::MODE_0};
 use panic_probe as _;
 
@@ -108,6 +113,15 @@ fn main() -> ! {
 
     // Turn on backlight
     bl.set_high().unwrap();
+
+    // Display text
+    let text_style = MonoTextStyleBuilder::new()
+        .font(&FONT_10X20)
+        .text_color(Rgb565::WHITE)
+        .build();
+    Text::new("Hello, Rust!", Point::new(10, 50), text_style)
+        .draw(&mut display)
+        .unwrap();
 
     loop {
         cortex_m::asm::wfi(); // "Wait For Interrupt"
