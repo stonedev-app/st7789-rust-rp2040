@@ -58,25 +58,25 @@ impl<'a> MisakiFontText<'a> {
             let mut data: [u8; HEIGHT as usize] = [0x00; HEIGHT as usize];
 
             // Retrieve data one line at a time
-            for i in 0..HEIGHT as usize {
-                data[i] = FONT_DATA[start_index as usize];
+            for item in data.iter_mut().take(HEIGHT as usize) {
+                *item = FONT_DATA[start_index as usize];
                 // In the case of the upper 4 bits
                 if lower % 2 == 0 {
-                    data[i] = data[i] >> 4;
+                    *item >>= 4;
                 // In the case of the lower 4 bits
                 } else {
-                    data[i] = data[i] & 0b00001111;
+                    *item &= 0b00001111;
                 }
                 // Move to the index of the next line
-                start_index = start_index + length;
+                start_index += length;
             }
             info!("{:04b}", data);
 
-            for i in 0..data.len() {
-                info!("0b{:04b}", data[i]);
+            for (i, item) in data.iter().enumerate() {
+                info!("0b{:04b}", *item);
                 for j in 0..WIDTH {
-                    let bitmask: u8 = 1 << WIDTH - 1 - j;
-                    if bitmask & data[i] > 0 {
+                    let bitmask: u8 = 1 << (WIDTH - 1 - j);
+                    if bitmask & *item > 0 {
                         target
                             .fill_solid(
                                 &Rectangle::new(
@@ -103,7 +103,6 @@ impl<'a> MisakiFontText<'a> {
         // Convert char to byte
         let mut buf = [0u8; 4];
         ch.encode_utf8(&mut buf);
-        let byte = buf[0];
-        return byte;
+        buf[0]
     }
 }
