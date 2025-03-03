@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
 
+mod misaki_font;
+
 use bsp::entry;
 use defmt::*;
 use defmt_rtt as _;
@@ -11,6 +13,7 @@ use embedded_graphics::{
     text::Text,
 };
 use embedded_hal::{digital::OutputPin, spi::MODE_0};
+use misaki_font::MisakiFontText;
 use panic_probe as _;
 
 use rp_pico::{
@@ -122,6 +125,9 @@ fn main() -> ! {
     Text::new("Hello, Rust!", Point::new(10, 50), text_style)
         .draw(&mut display)
         .unwrap();
+
+    // Misaki Font
+    MisakiFontText::new("Hello, Rust!", Point::new(10, 100)).draw(&mut display);
 
     loop {
         cortex_m::asm::wfi(); // "Wait For Interrupt"
