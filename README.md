@@ -1,4 +1,4 @@
-# To Use ST7789 with Raspberry Pi Pico
+# To use ST7789 with Raspberry Pi Pico
 
 ## Description
 
