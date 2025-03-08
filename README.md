@@ -24,7 +24,7 @@ https://github.com/rp-rs/rp-hal
 ## Usage
 
 1. Refer to circuit diagram and wiring.  
-   ![CircuitDiagram](https://github.com/stonedev-app/st7789-rust-rp2040/blob/main/fritzing/st7789_rp2040_breadboard.png)
+   ![CircuitDiagram](https://github.com/stonedev-app/st7789-rust-rp2040/blob/main/fritzing/st7789_rp2040_circuit_diagram.png)
 2. git clone and cargo run.
 
 ```bash
