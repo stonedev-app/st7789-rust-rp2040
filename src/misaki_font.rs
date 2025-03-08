@@ -86,7 +86,7 @@ impl<'a> MisakiFontText<'a> {
                                         self.position.x + j as i32 * SCALE as i32,
                                         self.position.y + i as i32 * SCALE as i32,
                                     ),
-                                    Size::new(1 * SCALE, 1 * SCALE),
+                                    Size::new(SCALE, SCALE),
                                 ),
                                 Rgb565::WHITE,
                             )
