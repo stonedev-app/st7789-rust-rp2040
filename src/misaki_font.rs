@@ -10,6 +10,8 @@ use embedded_graphics::{
 const WIDTH: u32 = 4;
 // Font height(pixel)
 const HEIGHT: u32 = 8;
+// Font Scale
+const SCALE: u32 = 2;
 
 // Font Data
 const FONT_DATA: &[u8] = include_bytes!("../font/misaki_4x8.raw");
@@ -81,10 +83,10 @@ impl<'a> MisakiFontText<'a> {
                             .fill_solid(
                                 &Rectangle::new(
                                     Point::new(
-                                        self.position.x + j as i32,
-                                        self.position.y + i as i32,
+                                        self.position.x + j as i32 * SCALE as i32,
+                                        self.position.y + i as i32 * SCALE as i32,
                                     ),
-                                    Size::new(1, 1),
+                                    Size::new(1 * SCALE, 1 * SCALE),
                                 ),
                                 Rgb565::WHITE,
                             )
@@ -94,7 +96,7 @@ impl<'a> MisakiFontText<'a> {
             }
 
             // Move to the position of the next character
-            self.position.x += WIDTH as i32;
+            self.position.x += WIDTH as i32 * SCALE as i32;
         }
     }
 
