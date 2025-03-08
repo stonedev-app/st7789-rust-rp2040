@@ -2,7 +2,7 @@
 
 ## Description
 
-This is sample to Use ST7789 with Raspberry Pi Pico.  
+This is sample to use ST7789 with Raspberry Pi Pico.  
 ![Breadboard](https://github.com/stonedev-app/st7789-rust-rp2040/blob/main/fritzing/st7789_rp2040_breadboard.png)
 
 ## Features
